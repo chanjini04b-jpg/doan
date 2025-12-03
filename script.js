@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 편집 관련 변수
     let isDrawing = false;
-    let currentTool = 'draw'; // 'draw', 'erase', 'line', 'rect-select', 'lasso', 'text'
+    let currentTool = 'draw'; // 'draw', 'erase', 'line', 'rect-select'
     let currentCanvas = null; // 현재 그리는 캔버스
     let selectionStart = null;
     let selectionPath = [];
@@ -1756,14 +1756,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 canvases.forEach(canvas => {
                     if (currentTool === 'erase') {
                         canvas.style.cursor = 'cell';
-                    } else if (currentTool === 'line') {
+                    } else if (currentTool === 'line' || currentTool === 'rect-select') {
                         canvas.style.cursor = 'crosshair';
-                    } else if (currentTool === 'rect-select') {
-                        canvas.style.cursor = 'crosshair';
-                    } else if (currentTool === 'lasso') {
-                        canvas.style.cursor = 'crosshair';
-                    } else if (currentTool === 'text') {
-                        canvas.style.cursor = 'text';
                     } else {
                         canvas.style.cursor = 'crosshair';
                     }
@@ -1772,10 +1766,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 도구 설명 표시
                 if (currentTool === 'rect-select') {
                     console.log('💡 사각형 선택: 드래그하여 영역을 선택하면 자동 삭제됩니다');
-                } else if (currentTool === 'lasso') {
-                    console.log('💡 올가미 선택: 자유롭게 드래그하여 영역을 선택하면 자동 삭제됩니다');
-                } else if (currentTool === 'text') {
-                    console.log('💡 텍스트 추가: 캔버스를 클릭하여 텍스트를 입력하세요');
                 }
             });
         });
@@ -1842,35 +1832,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         currentCanvas = canvas; // 현재 그리는 캔버스 저장
         
-        if (currentTool === 'text') {
-            // 텍스트 추가
-            const text = prompt('추가할 텍스트를 입력하세요:');
-            if (text && text.trim()) {
-                saveToHistory();
-                const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                const fontSize = brushSize ? parseInt(brushSize.value) * 3 : 30;
-                const color = drawColor ? drawColor.value : '#000000';
-                ctx.font = `${fontSize}px Arial`;
-                ctx.fillStyle = color;
-                ctx.fillText(text, x, y);
-                
-                console.log('✅ 텍스트 추가 완료:', text);
-                
-                // 원본 캔버스를 편집했다면 자동으로 도안 재생성
-                const originalCanvas = document.getElementById('originalCanvas');
-                if (canvas === originalCanvas && !resultSection.classList.contains('disabled')) {
-                    setTimeout(() => generateColoringPage(), 100);
-                }
-            }
-            return;
-        }
-        
         isDrawing = true;
         
         if (currentTool === 'line') {
             lineStartX = x;
             lineStartY = y;
-        } else if (currentTool === 'rect-select' || currentTool === 'lasso') {
+        } else if (currentTool === 'rect-select') {
             selectionStart = { x, y };
             selectionPath = [{ x, y }];
             
@@ -1924,25 +1891,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     x - selectionStart.x,
                     y - selectionStart.y
                 );
-            }
-            return;
-        } else if (currentTool === 'lasso') {
-            // 올가미 경로 추가
-            selectionPath.push({ x, y });
-            
-            // 올가미 미리보기
-            if (tempCanvas) {
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-                tempCtx.strokeStyle = '#0066ff';
-                tempCtx.lineWidth = 2;
-                tempCtx.setLineDash([5, 5]);
-                tempCtx.beginPath();
-                tempCtx.moveTo(selectionPath[0].x, selectionPath[0].y);
-                for (let i = 1; i < selectionPath.length; i++) {
-                    tempCtx.lineTo(selectionPath[i].x, selectionPath[i].y);
-                }
-                tempCtx.stroke();
             }
             return;
         } else if (currentTool === 'erase') {
@@ -2020,39 +1968,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 tempCanvas.getContext('2d').clearRect(0, 0, tempCanvas.width, tempCanvas.height);
             }
             
-            selectionStart = null;
-        } else if (currentTool === 'lasso') {
-            // 올가미 영역 삭제 (충분히 드래그했을 때만)
-            // 시작점과 끝점의 거리 계산
-            const hasMovement = selectionPath.length > 10;
-            
-            console.log(`🖌️ 올가미 경로 점 개수: ${selectionPath.length}`);
-            
-            if (hasMovement) {
-                // 실제로 영역이 그려졌으므로 삭제 실행
-                saveToHistory();
-                
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.moveTo(selectionPath[0].x, selectionPath[0].y);
-                for (let i = 1; i < selectionPath.length; i++) {
-                    ctx.lineTo(selectionPath[i].x, selectionPath[i].y);
-                }
-                ctx.closePath();
-                ctx.fill();
-                
-                console.log('✅ 올가미 영역 삭제 완료');
-            } else {
-                console.log('⚠️ 올가미 경로가 너무 짧아서 무시됨 (최소 10점 필요)');
-            }
-            
-            // 임시 캔버스 정리
-            if (tempCanvas) {
-                tempCanvas.getContext('2d').clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-            }
-            
-            selectionPath = [];
             selectionStart = null;
         }
         
