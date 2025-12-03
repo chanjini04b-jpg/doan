@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI 기반 컬러링 도안 생성기 - 이미지를 업로드하거나 검색하여 나만의 컬러링북을 만들어보세요. 무료로 PDF 저장 및 인쇄 가능">
+    <meta name="keywords" content="컬러링북, 컬러링 도안, 색칠공부, 누끼따기, 실루엣, AI 이미지 처리, PDF 저장">
+    <meta name="author" content="Coloring Page Generator">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AI 컬러링 도안 생성기">
+    <meta property="og:description" content="이미지를 업로드하면 AI가 자동으로 컬러링 도안을 만들어줍니다. 무료 PDF 저장!">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI 컬러링 도안 생성기">
+    <meta name="twitter:description" content="이미지를 업로드하면 AI가 자동으로 컬러링 도안을 만들어줍니다.">
+    
+    <title>AI 컬러링 도안 생성기 | 무료 컬러링북 만들기</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header>
+            <h1>🎨 컬러링 도안 생성기</h1>
+            <p class="subtitle">이미지를 업로드하거나 검색하여 나만의 컬러링 도안을 만들어보세요</p>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main>
+            <!-- 이미지 입력 섹션 -->
+            <section class="input-section">
+                <div class="input-tabs">
+                    <button class="tab-button active" data-tab="upload">📁 이미지 업로드</button>
+                    <button class="tab-button" data-tab="search">🔍 이미지 검색</button>
+                </div>
+
+                <!-- 업로드 탭 -->
+                <div class="tab-content active" id="upload-tab">
+                    <div class="upload-area-compact">
+                        <div id="uploadPreview" class="upload-preview" style="display: none;">
+                            <img id="uploadPreviewImage" alt="업로드된 이미지">
+                            <p class="preview-success">✅ 이미지가 준비되었어요!</p>
+                        </div>
+                        <div id="uploadPrompt">
+                            <input type="file" id="fileInput" accept="image/*" hidden>
+                            <label for="fileInput" class="upload-button">
+                                📁 이미지 파일 선택
+                            </label>
+                            <p class="upload-hint">또는 이미지를 드래그하거나 <strong>Ctrl+V</strong>로 붙여넣기</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 검색 탭 -->
+                <div class="tab-content" id="search-tab">
+                    <div id="searchPreview" class="upload-preview" style="display: none;">
+                        <img id="searchPreviewImage" alt="붙여넣은 이미지">
+                        <p class="preview-success">✅ 이미지가 준비되었어요!</p>
+                    </div>
+                    <div id="searchPrompt">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="검색어 입력 (예: 공룡, 꽃, 자동차)">
+                            <div class="search-buttons">
+                                <button id="naverSearchButton" class="search-engine-btn">
+                                    <span style="color: #03C75A; font-weight: bold;">N</span> 네이버 검색
+                                </button>
+                                <button id="googleSearchButton" class="search-engine-btn">
+                                    <span style="color: #4285F4; font-weight: bold;">G</span> 구글 검색
+                                </button>
+                            </div>
+                        </div>
+                        <p class="search-hint">ℹ️ 검색 결과에서 이미지를 <strong>우클릭 → 이미지 복사</strong> 후 <strong>Ctrl+V</strong>로 붙여넣거나, 다운로드하여 업로드하세요</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- 설정 섹션 -->
+            <section class="settings-section disabled" id="settingsSection">
+                <h2>📋 단계 1: 이미지 분석 및 도안 생성</h2>
+                
+                <!-- AI 추천 섹션 -->
+                <div class="recommendation-section" id="recommendationSection">
+                    <div class="recommendation-header">
+                        <h3>🤖 AI 분석 결과</h3>
+                    </div>
+                    <div class="recommendation-result" id="recommendationResult">
+                        <p style="text-align: center; opacity: 0.8; padding: 20px;">아래 버튼을 클릭하면 AI가 이미지를 분석하여 최적의 설정으로 도안을 자동 생성합니다.</p>
+                    </div>
+                </div>
+                
+                <div class="button-group" style="text-align: center;">
+                    <button id="generateButton" class="primary-button big-button">🎨 컬러링 도안 만들기</button>
+                </div>
+            </section>
+
+            <!-- 결과 섹션 -->
+            <section class="result-section disabled" id="resultSection">
+                <h2>🎨 단계 2: 도안 조정 및 편집</h2>
+                
+                <!-- 캠버스 영역 (한 줄로 배치) -->
+                <div class="canvas-row">
+                    <div class="canvas-item">
+                        <h3>원본 이미지</h3>
+                        <canvas id="originalCanvas"></canvas>
+                    </div>
+                    <div class="canvas-item">
+                        <h3>컴러링 도안</h3>
+                        <canvas id="resultCanvas"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 도안 설정 -->
+                <div class="edit-tools-section">
+                    <h3>⚙️ 도안 설정 <span style="font-size: 0.85em; color: #888; font-weight: normal;">(실시간 자동 적용)</span></h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="edgeThreshold">윤곽선 감도</label>
+                            <input type="range" id="edgeThreshold" min="10" max="200" value="50" step="5">
+                            <span id="edgeValue">50</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="lineWidth">선 두께</label>
+                            <input type="range" id="lineWidth" min="0.1" max="5" value="1.5" step="0.1">
+                            <span id="lineValue">1.5</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="blurAmount">노이즈 감소</label>
+                            <input type="range" id="blurAmount" min="0" max="10" value="2" step="1">
+                            <span id="blurValue">2</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="contrast">명암 대비</label>
+                            <input type="range" id="contrast" min="0" max="200" value="100" step="10">
+                            <span id="contrastValue">100</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="detailLevel">디테일 레벨</label>
+                            <select id="detailLevel">
+                                <option value="low">낮음</option>
+                                <option value="medium" selected>보통</option>
+                                <option value="high">높음</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="drawingMode">도안 스타일</label>
+                            <select id="drawingMode">
+                                <option value="coloring" selected>컬러링북 (상세)</option>
+                                <option value="silhouette">누끼/실루엣 (단순)</option>
+                                <option value="sketch">✏️ 연필 스케치 (수채화용)</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="invertColors">
+                                색상 반전
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="autoEnhance" checked>
+                                자동 품질 향상
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 편집 도구 -->
+                <div class="edit-tools-section">
+                    <h3>✏️ 편집 도구</h3>
+                    <div class="edit-toolbar-horizontal">
+                        <div class="tool-group">
+                            <span class="tool-label-text">도구:</span>
+                            <button class="tool-btn active" data-tool="draw" title="그리기">✏️ 그리기</button>
+                            <button class="tool-btn" data-tool="erase" title="지우기">🧹 지우개</button>
+                            <button class="tool-btn" data-tool="line" title="직선">📏 직선</button>
+                            <button class="tool-btn" data-tool="rect-select" title="사각형 선택 삭제">⬛ 사각형</button>
+                            <button class="tool-btn" data-tool="lasso" title="올가미 선택 삭제">✂️ 올가미</button>
+                            <button class="tool-btn" data-tool="text" title="텍스트 추가">📝 텍스트</button>
+                        </div>
+                        <div class="tool-group">
+                            <label class="tool-compact">
+                                선 굵기: <input type="range" id="brushSize" min="1" max="20" value="2"><span id="brushSizeValue">2</span>
+                            </label>
+                        </div>
+                        <div class="tool-group">
+                            <label class="tool-compact">
+                                색상: <input type="color" id="drawColor" value="#000000">
+                            </label>
+                        </div>
+                        <div class="tool-group">
+                            <button class="tool-btn" id="undoButton" title="실행취소">↺ 취소</button>
+                            <button class="tool-btn" id="redoButton" title="다시실행">↻ 재실행</button>
+                            <button class="tool-btn" id="clearEditsButton" title="편집 초기화">🗑️ 초기화</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="downloadPdfButton" class="primary-button">📄 PDF로 저장</button>
+                    <button id="downloadImageButton" class="secondary-button">🖼️ 이미지로 저장</button>
+                    <button id="printButton" class="secondary-button">🖨️ 인쇄하기</button>
+                    <button id="resetButton" class="secondary-button">🔄 새로 만들기</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 푸터 -->
+        <footer>
+            <p>© 2025 컬러링 도안 생성기 by 나리퐁. 재미있게 즐기세요! 🌈</p>
+        </footer>
+    </div>
+
+    <!-- 로딩 스피너 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>처리 중...</p>
+    </div>
+
+    <!-- jsPDF 라이브러리 (defer로 비동기 로드) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="script.js" defer></script>
+</body>
+</html>
