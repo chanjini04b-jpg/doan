@@ -1605,48 +1605,134 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const originalImgData = originalCanvas.toDataURL('image/png');
-        const resultImgData = resultCanvas.toDataURL('image/png');
+        // 고해상도 이미지로 변환 (더 선명한 인쇄)
+        const originalImgData = originalCanvas.toDataURL('image/png', 1.0);
+        const resultImgData = resultCanvas.toDataURL('image/png', 1.0);
+        
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
+            <!DOCTYPE html>
             <html>
                 <head>
+                    <meta charset="UTF-8">
                     <title>컬러링 도안 인쇄</title>
                     <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        @page {
+                            size: A4 portrait;
+                            margin: 10mm;
+                        }
+                        
+                        html, body {
+                            width: 100%;
+                            height: 100%;
+                        }
+                        
                         body { 
-                            margin: 0; 
-                            padding: 20px;
                             font-family: Arial, sans-serif;
+                            background: white;
                         }
+                        
                         .page {
+                            position: relative;
+                            width: 210mm;
+                            height: 297mm;
                             page-break-after: always;
-                            text-align: center;
-                            margin-bottom: 40px;
+                            page-break-inside: avoid;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 15mm;
                         }
+                        
+                        .page:last-child {
+                            page-break-after: auto;
+                        }
+                        
                         h2 {
-                            margin-bottom: 20px;
-                            font-size: 24px;
+                            font-size: 16pt;
+                            margin-bottom: 8mm;
+                            text-align: center;
+                            color: #333;
                         }
+                        
+                        .img-container {
+                            width: 100%;
+                            height: calc(100% - 30mm);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        
                         img { 
-                            max-width: 100%; 
+                            max-width: 100%;
+                            max-height: 100%;
+                            width: auto;
                             height: auto;
-                            border: 1px solid #ddd;
+                            object-fit: contain;
+                            image-rendering: -webkit-optimize-contrast;
+                            image-rendering: crisp-edges;
                         }
+                        
                         @media print {
-                            body { margin: 0; padding: 10mm; }
-                            .page { page-break-after: always; }
-                            img { width: 100%; height: auto; page-break-inside: avoid; }
+                            html, body {
+                                width: 210mm;
+                                height: 297mm;
+                            }
+                            
+                            .page {
+                                margin: 0;
+                                padding: 10mm;
+                                page-break-after: always;
+                                page-break-inside: avoid;
+                            }
+                            
+                            h2 {
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            
+                            img {
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            
+                            @page {
+                                margin: 0;
+                            }
+                        }
+                        
+                        @media screen {
+                            body {
+                                padding: 20px;
+                                background: #e0e0e0;
+                            }
+                            .page {
+                                margin: 0 auto 20px;
+                                background: white;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            }
                         }
                     </style>
                 </head>
                 <body>
                     <div class="page">
-                        <h2>원본 이미지</h2>
-                        <img src="${originalImgData}">
+                        <h2>📷 원본 이미지</h2>
+                        <div class="img-container">
+                            <img src="${originalImgData}" alt="원본 이미지">
+                        </div>
                     </div>
                     <div class="page">
-                        <h2>컬러링 도안</h2>
-                        <img src="${resultImgData}" onload="window.print();">
+                        <h2>🎨 컬러링 도안</h2>
+                        <div class="img-container">
+                            <img src="${resultImgData}" alt="컬러링 도안" onload="setTimeout(() => window.print(), 500);">
+                        </div>
                     </div>
                 </body>
             </html>
