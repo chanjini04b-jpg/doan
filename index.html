@@ -200,7 +200,23 @@
                 <div class="action-buttons">
                     <button id="downloadPdfButton" class="primary-button">📄 PDF로 저장</button>
                     <button id="downloadImageButton" class="secondary-button">🖼️ 이미지로 저장</button>
-                    <button id="printButton" class="secondary-button">🖨️ 인쇄하기</button>
+                    <div class="print-options">
+                        <div class="print-label">🖨️ 인쇄하기:</div>
+                        <div class="print-type-selector">
+                            <label class="radio-option">
+                                <input type="radio" name="printType" value="both">
+                                <span>둘 다</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="printType" value="original">
+                                <span>원본만</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="printType" value="coloring">
+                                <span>도안만</span>
+                            </label>
+                        </div>
+                    </div>
                     <button id="resetButton" class="secondary-button">🔄 새로 만들기</button>
                 </div>
             </section>

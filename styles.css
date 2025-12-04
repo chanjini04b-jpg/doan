@@ -69,6 +69,8 @@ main {
     font-size: 1em;
     cursor: pointer;
     transition: all 0.3s;
+    position: relative;
+    z-index: 10;
 }
 
 .tab-button.active {
@@ -977,6 +979,60 @@ main {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
+}
+
+.print-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.print-label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    text-align: center;
+}
+
+.print-type-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 12px;
+    user-select: none;
+}
+
+.radio-option:hover {
+    border-color: #4CAF50;
+    background: #f0f9f0;
+}
+
+.radio-option input[type="radio"] {
+    cursor: pointer;
+    margin: 0;
+}
+
+.radio-option input[type="radio"]:checked + span {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.radio-option span {
+    color: #333;
 }
 
 /* 푸터 */

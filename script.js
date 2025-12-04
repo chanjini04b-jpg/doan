@@ -1,3 +1,11 @@
+// 브라우저 확장 프로그램 오류 무시
+window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('message channel closed')) {
+        e.preventDefault();
+        return true;
+    }
+});
+
 // 페이지 로드 후 실행
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎨 컬러링 도안 생성기 시작!');
@@ -32,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const generateButton = document.getElementById('generateButton');
     const downloadPdfButton = document.getElementById('downloadPdfButton');
     const downloadImageButton = document.getElementById('downloadImageButton');
-    const printButton = document.getElementById('printButton');
     const resetButton = document.getElementById('resetButton');
     
     // 편집 도구 요소
@@ -143,6 +150,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== 이미지 로드 함수 ==========
     function loadImage(src) {
         console.log('📷 이미지 로드 시작');
+        
+        // 기존 캔버스 초기화
+        const originalCanvas = document.getElementById('originalCanvas');
+        const resultCanvas = document.getElementById('resultCanvas');
+        if (originalCanvas) {
+            const ctx = originalCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+            originalCanvas.width = 0;
+            originalCanvas.height = 0;
+        }
+        if (resultCanvas) {
+            const ctx = resultCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, resultCanvas.width, resultCanvas.height);
+            resultCanvas.width = 0;
+            resultCanvas.height = 0;
+        }
+        
+        // 편집 히스토리 초기화
+        editHistory = [];
+        historyStep = -1;
+        
+        // 결과 섹션 비활성화
+        resultSection.classList.add('disabled');
+        
+        console.log('✅ 기존 캔버스 및 히스토리 초기화 완료');
+        
         const img = new Image();
         img.crossOrigin = 'anonymous';
         
@@ -370,6 +403,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== 컬러링 도안 생성 함수 (혁신적인 버전) ==========
     function generateColoringPage() {
         console.log('🚀 컬러링 도안 생성 시작!');
+        
+        if (!currentImage) {
+            alert('먼저 이미지를 업로드하거나 붙여넣어주세요.');
+            return;
+        }
         
         // 캔버스 요소 가져오기
         const originalCanvas = document.getElementById('originalCanvas');
@@ -1596,18 +1634,72 @@ document.addEventListener('DOMContentLoaded', function() {
         link.click();
     });
 
-    // ========== 인쇄 ==========
-    printButton.addEventListener('click', () => {
-        const resultCanvas = document.getElementById('resultCanvas');
-        const originalCanvas = document.getElementById('originalCanvas');
-        if (!resultCanvas || !resultCanvas.width) {
-            alert('먼저 컬러링 도안을 생성해주세요.');
-            return;
-        }
+    // ========== 인쇄 (라디오 버튼 클릭 시 바로 실행) ==========
+    const printRadios = document.querySelectorAll('input[name="printType"]');
+    printRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const resultCanvas = document.getElementById('resultCanvas');
+            const originalCanvas = document.getElementById('originalCanvas');
+            if (!resultCanvas || !resultCanvas.width) {
+                alert('먼저 컬러링 도안을 생성해주세요.');
+                radio.checked = false;
+                return;
+            }
+            
+            const selectedType = radio.value;
+            
+            let option = '3'; // 기본값: 둘 다
+            if (selectedType === 'original') {
+                option = '1';
+            } else if (selectedType === 'coloring') {
+                option = '2';
+            }
+            
+            // 고해상도 이미지로 변환 (더 선명한 인쇄)
+            const originalImgData = originalCanvas.toDataURL('image/png', 1.0);
+            const resultImgData = resultCanvas.toDataURL('image/png', 1.0);
         
-        // 고해상도 이미지로 변환 (더 선명한 인쇄)
-        const originalImgData = originalCanvas.toDataURL('image/png', 1.0);
-        const resultImgData = resultCanvas.toDataURL('image/png', 1.0);
+        let htmlContent = '';
+        
+        if (option === '1') {
+            // 원본 이미지만 (세로형)
+            htmlContent = `
+                <div class="page single">
+                    <h2>📷 원본 이미지</h2>
+                    <div class="img-container">
+                        <img src="${originalImgData}" alt="원본 이미지">
+                    </div>
+                </div>
+            `;
+        } else if (option === '2') {
+            // 컬러링 도안만 (세로형)
+            htmlContent = `
+                <div class="page single">
+                    <h2>🎨 컬러링 도안</h2>
+                    <div class="img-container">
+                        <img src="${resultImgData}" alt="컬러링 도안">
+                    </div>
+                </div>
+            `;
+        } else {
+            // 둘 다 (가로형)
+            htmlContent = `
+                <div class="page dual">
+                    <div class="image-section">
+                        <h2>📷 원본 이미지</h2>
+                        <div class="img-container">
+                            <img src="${originalImgData}" alt="원본 이미지">
+                        </div>
+                    </div>
+                    <div class="image-section">
+                        <h2>🎨 컬러링 도안</h2>
+                        <div class="img-container">
+                            <img src="${resultImgData}" alt="컬러링 도안">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
@@ -1624,13 +1716,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         @page {
-                            size: A4 portrait;
-                            margin: 10mm;
+                            size: A4 ${option === '3' ? 'landscape' : 'portrait'};
+                            margin: 0;
                         }
                         
                         html, body {
                             width: 100%;
                             height: 100%;
+                            margin: 0;
+                            padding: 0;
                         }
                         
                         body { 
@@ -1638,11 +1732,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             background: white;
                         }
                         
-                        .page {
-                            position: relative;
-                            width: 210mm;
-                            height: 297mm;
-                            page-break-after: always;
+                        /* 단일 이미지 (세로형) */
+                        .page.single {
+                            width: 100vw;
+                            height: 100vh;
+                            page-break-after: avoid;
                             page-break-inside: avoid;
                             display: flex;
                             flex-direction: column;
@@ -1651,23 +1745,53 @@ document.addEventListener('DOMContentLoaded', function() {
                             padding: 15mm;
                         }
                         
-                        .page:last-child {
-                            page-break-after: auto;
+                        /* 두 이미지 (가로형) */
+                        .page.dual {
+                            width: 100vw;
+                            height: 100vh;
+                            page-break-after: avoid;
+                            page-break-inside: avoid;
+                            display: flex;
+                            flex-direction: row;
+                            align-items: stretch;
+                            justify-content: space-between;
+                            padding: 10mm;
+                            gap: 5mm;
+                        }
+                        
+                        .image-section {
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            min-width: 0;
                         }
                         
                         h2 {
-                            font-size: 16pt;
-                            margin-bottom: 8mm;
+                            font-size: 12pt;
+                            margin-bottom: 3mm;
                             text-align: center;
                             color: #333;
+                            flex-shrink: 0;
+                        }
+                        
+                        .page.single h2 {
+                            font-size: 16pt;
+                            margin-bottom: 8mm;
                         }
                         
                         .img-container {
+                            flex: 1;
                             width: 100%;
-                            height: calc(100% - 30mm);
                             display: flex;
                             align-items: center;
                             justify-content: center;
+                            overflow: hidden;
+                        }
+                        
+                        .page.single .img-container {
+                            height: calc(100% - 30mm);
                         }
                         
                         img { 
@@ -1681,16 +1805,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         @media print {
+                            @page {
+                                margin: 0;
+                            }
+                            
                             html, body {
-                                width: 210mm;
-                                height: 297mm;
+                                width: 100%;
+                                height: 100%;
+                                margin: 0;
+                                padding: 0;
                             }
                             
                             .page {
+                                width: 100%;
+                                height: 100%;
                                 margin: 0;
-                                padding: 10mm;
-                                page-break-after: always;
+                                page-break-after: avoid;
                                 page-break-inside: avoid;
+                            }
+                            
+                            .page.single {
+                                padding: 12mm;
+                            }
+                            
+                            .page.dual {
+                                padding: 8mm;
                             }
                             
                             h2 {
@@ -1702,10 +1841,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 -webkit-print-color-adjust: exact;
                                 print-color-adjust: exact;
                             }
-                            
-                            @page {
-                                margin: 0;
-                            }
                         }
                         
                         @media screen {
@@ -1714,30 +1849,31 @@ document.addEventListener('DOMContentLoaded', function() {
                                 background: #e0e0e0;
                             }
                             .page {
-                                margin: 0 auto 20px;
+                                margin: 0 auto;
                                 background: white;
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            }
+                            .page.dual {
+                                max-width: 297mm;
+                                max-height: 210mm;
+                            }
+                            .page.single {
+                                max-width: 210mm;
+                                max-height: 297mm;
                             }
                         }
                     </style>
                 </head>
                 <body>
-                    <div class="page">
-                        <h2>📷 원본 이미지</h2>
-                        <div class="img-container">
-                            <img src="${originalImgData}" alt="원본 이미지">
-                        </div>
-                    </div>
-                    <div class="page">
-                        <h2>🎨 컬러링 도안</h2>
-                        <div class="img-container">
-                            <img src="${resultImgData}" alt="컬러링 도안" onload="setTimeout(() => window.print(), 500);">
-                        </div>
-                    </div>
+                    ${htmlContent}
+                    <script>
+                        setTimeout(() => window.print(), 500);
+                    </script>
                 </body>
             </html>
         `);
         printWindow.document.close();
+        });
     });
 
     // ========== 초기화 ==========
